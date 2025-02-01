@@ -35,6 +35,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var mongoose_1 = require("mongoose");
 var schema_1 = require("./schema");
@@ -45,19 +54,9 @@ var createFAQ = function () { return __awaiter(void 0, void 0, void 0, function 
         switch (_a.label) {
             case 0:
                 newFAQ = new schema_1.default({
-                    question: 'What is Node.js?',
-                    answer: 'Node.js is a JavaScript runtime built on Chrome\'s V8 JavaScript engine.',
-                    translations: {
-                        hi: {
-                            question: 'Node.js क्या है?',
-                            answer: 'Node.js Chrome के V8 JavaScript इंजन पर बना एक JavaScript रनटाइम है।',
-                        },
-                        bn: {
-                            question: 'Node.js কি?',
-                            answer: 'Node.js হল Chrome-এর V8 JavaScript ইঞ্জিনে তৈরি একটি JavaScript রানটাইম।',
-                        },
-                        // Add more languages dynamically
-                    },
+                    question1: 'What is Node.js?',
+                    answer1: 'Node.js is a JavaScript runtime built on Chrome\'s V8 JavaScript engine.',
+                    lang: 'en',
                 });
                 return [4 /*yield*/, newFAQ.save()];
             case 1:
@@ -67,24 +66,25 @@ var createFAQ = function () { return __awaiter(void 0, void 0, void 0, function 
         }
     });
 }); };
-var getTranslatedFAQ = function (languageCode) { return __awaiter(void 0, void 0, void 0, function () {
-    var faq, translatedText;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, schema_1.default.findOne({ question: 'What is Node.js?' })];
-            case 1:
-                faq = _a.sent();
-                if (faq) {
-                    translatedText = faq.getTranslatedAnswer(languageCode);
-                    console.log('Translated FAQ:', translatedText);
-                }
-                else {
-                    console.log('FAQ not found.');
-                }
-                return [2 /*return*/];
-        }
+var getTranslatedFAQ = function () {
+    var args_1 = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args_1[_i] = arguments[_i];
+    }
+    return __awaiter(void 0, __spreadArray([], args_1, true), void 0, function (languageCode) {
+        var faq;
+        if (languageCode === void 0) { languageCode = 'en'; }
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, schema_1.default.findOne({ lang: languageCode })];
+                case 1:
+                    faq = _a.sent();
+                    console.log(faq);
+                    return [2 /*return*/];
+            }
+        });
     });
-}); };
+};
 // Run the functions
 (function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
