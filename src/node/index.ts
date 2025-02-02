@@ -1,19 +1,19 @@
-import mongoose from "mongoose";
-import FAQ from "./schema.ts";
+// import mongoose from "mongoose";
+//import FAQ from "./schema.ts";
 import * as http from "http";
 import express, { Request, Response, NextFunction } from 'express';
 import { default as Redis } from "ioredis"
+// import FAQ from "./schema.ts";
 
 const redis = new Redis.default({
-  host: '127.0.0.1',
+  host: 'redis',
   port: 6379,
 })
 
 const app = express();
-const port = 8000;
+const port = 3000;
 
 
-mongoose.connect("mongodb://127.0.0.1:27017/faq");
 
 interface translationBody {
   question: string;
@@ -24,7 +24,7 @@ interface translationBody {
   error?: string;
 }
 
-interface IFAQ extends Document {
+interface IFAQ {
     lang: string;
     question1: string;
     answer1: string;
@@ -33,15 +33,15 @@ interface IFAQ extends Document {
 
 
 const getTranslatedFAQ = async (languageCode: string = "en", callback: Function) => {
-  let faq = await FAQ.findOne({ lang: languageCode }).then((faq) => {
-    if (!faq) {
+      let faq: IFAQ = { lang: "", question1: "", answer1: "" };
+
       const faq_str = JSON.stringify({
-        "question": "hello mr BR",
-        "answer": "my name is hello",
+        "question": "What is the capital of France?",
+        "answer": "Paris is the capital of France.",
         "lang": languageCode,
       });
       const options = {
-        hostname: "127.0.0.1",
+        hostname: "translation_server",
         port: 8000,
         path: "/",
         method: "GET",
@@ -63,7 +63,6 @@ const getTranslatedFAQ = async (languageCode: string = "en", callback: Function)
         });
         res.on("end", () => {
           //console.log(JSON.parse(ans));
-          faq = new FAQ();
           let responseAns: translationBody = JSON.parse(ans);
           if (
             responseAns.error || responseAns.answer_translated === undefined
@@ -84,21 +83,12 @@ const getTranslatedFAQ = async (languageCode: string = "en", callback: Function)
             faq.lang = responseAns.lang;
             req.end();
             console.log(faq);
-            FAQ.create(faq).then(() => {
-              console.log("FAQ created successfully!");
-            });
             callback(faq);
           }
         });
       });
       req.write(faq_str);
-    } else {
-      console.log(faq);
-      callback(faq);
-    }
-    
-  });
-};
+    };
 
 // Run the functions
 // (async () => {
@@ -116,22 +106,22 @@ const getTranslatedFAQ = async (languageCode: string = "en", callback: Function)
 //Middleware to check for caching with Redis
 const checkCache = async (req: Request, res: Response, next: NextFunction) => {
   let q = req.query.lang as string;
+
   if(q === undefined){
-    next();
+    q = "en";
+  }
+
+  const cachedData = await redis.get(q);
+
+  if(cachedData){
+    console.log("cache in use");
+    res.json(cachedData);
   }
   else{
-    const cachedData = await redis.get(q);
-
-    if(cachedData){
-      res.json(cachedData);
-    }
-    else{
-      next();
-    }
+    console.log("cache not in use");
+    next();
   }
-
 }
-
 
 // HTTP Server using express
 
