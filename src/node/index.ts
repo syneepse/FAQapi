@@ -1,7 +1,13 @@
 import mongoose from "mongoose";
-import FAQ from "./schema";
+import FAQ from "./schema.ts";
 import * as http from "http";
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
+import { default as Redis } from "ioredis"
+
+const redis = new Redis.default({
+  host: '127.0.0.1',
+  port: 6379,
+})
 
 const app = express();
 const port = 8000;
@@ -18,18 +24,15 @@ interface translationBody {
   error?: string;
 }
 
-const createFAQ = async () => {
-  const newFAQ = new FAQ({
-    question1: "What is Node.js?",
-    answer1:
-      "Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine.",
-    lang: "en",
-  });
+interface IFAQ extends Document {
+    lang: string;
+    question1: string;
+    answer1: string;
+    //getTranslatedAnswer: () => { question: string, answer: string };
+}
 
-  await newFAQ.save();
-  console.log("FAQ created successfully!");
-};
-const getTranslatedFAQ = async (languageCode: string = "en") => {
+
+const getTranslatedFAQ = async (languageCode: string = "en", callback: Function) => {
   let faq = await FAQ.findOne({ lang: languageCode }).then((faq) => {
     if (!faq) {
       const faq_str = JSON.stringify({
@@ -65,7 +68,10 @@ const getTranslatedFAQ = async (languageCode: string = "en") => {
           if (
             responseAns.error || responseAns.answer_translated === undefined
           ) {
+            faq.question1 = responseAns.question;
+            faq.answer1 = responseAns.answer;
             console.log(responseAns.error);
+            callback(faq);
             //return;
           }
           else{
@@ -81,13 +87,16 @@ const getTranslatedFAQ = async (languageCode: string = "en") => {
             FAQ.create(faq).then(() => {
               console.log("FAQ created successfully!");
             });
+            callback(faq);
           }
         });
       });
       req.write(faq_str);
     } else {
       console.log(faq);
+      callback(faq);
     }
+    
   });
 };
 
@@ -104,12 +113,43 @@ const getTranslatedFAQ = async (languageCode: string = "en") => {
 //   await getTranslatedFAQ(); // Fallback to default text (no French translation)
 // })();
 
+//Middleware to check for caching with Redis
+const checkCache = async (req: Request, res: Response, next: NextFunction) => {
+  let q = req.query.lang as string;
+  if(q === undefined){
+    next();
+  }
+  else{
+    const cachedData = await redis.get(q);
+
+    if(cachedData){
+      res.json(cachedData);
+    }
+    else{
+      next();
+    }
+  }
+
+}
+
+
 // HTTP Server using express
 
 app.get('/', (req, res) => {
   res.json('Hello World');
 });
 
+app.get('/api/faqs/',checkCache, async (req: Request, res : Response) => {
+  console.log(req.query.lang);
+  await getTranslatedFAQ(req.query.lang as string, async (faq: IFAQ) => {
+    console.log("response to client : " + faq);
+    const dataToCache = faq;
+    await redis.set(faq.lang as string, JSON.stringify(dataToCache), 'EX', 3600);
+    res.json(faq);
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+

@@ -27,6 +27,7 @@ async def read_root(item: Item) -> dict:
     except ValueError as ve:
         # return {"error": "Failed to translate the text"}
         item.error = str(ve)
+    print(item.dict)
     return item.dict()
 
 

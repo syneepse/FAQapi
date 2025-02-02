@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "target": "es2015",
+    "module": "nodenext",
+    "outDir": "./",
+    "strict": true,
+    "allowImportingTsExtensions" : true,
+    "noEmit" : true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/node/*.ts"],
+  "exclude": ["node_modules"],
+  
+}
