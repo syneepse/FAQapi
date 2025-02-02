@@ -26,7 +26,7 @@ async def read_root(item: Item) -> dict:
         item.question_translated, item.answer_translated = await translate_text(item.question, item.answer, item.lang)
     except ValueError as ve:
         # return {"error": "Failed to translate the text"}
-        item.error = "Failed to translate the text"
+        item.error = str(ve)
     return item.dict()
 
 

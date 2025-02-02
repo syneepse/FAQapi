@@ -1,16 +1,13 @@
 {
-    "extends": "ts-node/node16/tsconfig.json",
-    "ts-node": {
-
-      "transpileOnly": false    ,
-  
-      "files": true,
-  
-      "compilerOptions": {
-
-      }
-    },
-    "compilerOptions": {
-
-    }
-  }
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "outDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 import FAQ from "./schema";
-import http from "http";
+import * as http from "http";
+import express, { Request, Response } from 'express';
+
+const app = express();
+const port = 8000;
+
 
 mongoose.connect("mongodb://127.0.0.1:27017/faq");
 
@@ -58,20 +63,25 @@ const getTranslatedFAQ = async (languageCode: string = "en") => {
           faq = new FAQ();
           let responseAns: translationBody = JSON.parse(ans);
           if (
-            responseAns.error && responseAns.answer_translated === undefined
+            responseAns.error || responseAns.answer_translated === undefined
           ) {
             console.log(responseAns.error);
             //return;
           }
-          faq.question1 = responseAns.question_translated
-            ? responseAns.question_translated
-            : responseAns.question;
-          faq.answer1 = responseAns.answer_translated
-            ? responseAns.answer_translated
-            : responseAns.answer;
-          faq.lang = responseAns.lang;
-          req.end();
-          console.log(faq);
+          else{
+            faq.question1 = responseAns.question_translated
+              ? responseAns.question_translated
+              : responseAns.question;
+            faq.answer1 = responseAns.answer_translated
+              ? responseAns.answer_translated
+              : responseAns.answer;
+            faq.lang = responseAns.lang;
+            req.end();
+            console.log(faq);
+            FAQ.create(faq).then(() => {
+              console.log("FAQ created successfully!");
+            });
+          }
         });
       });
       req.write(faq_str);
@@ -82,10 +92,24 @@ const getTranslatedFAQ = async (languageCode: string = "en") => {
 };
 
 // Run the functions
-(async () => {
-  await createFAQ();
-  await getTranslatedFAQ("fr"); // Get Hindi translation
-  await getTranslatedFAQ("fr"); // Get Bengali translation
-  await getTranslatedFAQ("fr");
-  await getTranslatedFAQ(); // Fallback to default text (no French translation)
-})();
+// (async () => {
+//   //await createFAQ();
+//   await getTranslatedFAQ("fr").then(async () => {
+//     await getTranslatedFAQ("jhgsljkfhgjfdk").then(async () => {
+//       await getTranslatedFAQ("fsjskldfjsdlka").then(async () => {
+//         await getTranslatedFAQ("hi");
+//       }); 
+//     });
+//   });
+//   await getTranslatedFAQ(); // Fallback to default text (no French translation)
+// })();
+
+// HTTP Server using express
+
+app.get('/', (req, res) => {
+  res.json('Hello World');
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

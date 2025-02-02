@@ -47,6 +47,10 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var mongoose_1 = require("mongoose");
 var schema_1 = require("./schema");
+var http = require("http");
+var express_1 = require("express");
+var app = (0, express_1.default)();
+var port = 8000;
 mongoose_1.default.connect("mongodb://127.0.0.1:27017/faq");
 var createFAQ = function () { return __awaiter(void 0, void 0, void 0, function () {
     var newFAQ;
@@ -54,14 +58,14 @@ var createFAQ = function () { return __awaiter(void 0, void 0, void 0, function 
         switch (_a.label) {
             case 0:
                 newFAQ = new schema_1.default({
-                    question1: 'What is Node.js?',
-                    answer1: 'Node.js is a JavaScript runtime built on Chrome\'s V8 JavaScript engine.',
-                    lang: 'en',
+                    question1: "What is Node.js?",
+                    answer1: "Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine.",
+                    lang: "en",
                 });
                 return [4 /*yield*/, newFAQ.save()];
             case 1:
                 _a.sent();
-                console.log('FAQ created successfully!');
+                console.log("FAQ created successfully!");
                 return [2 /*return*/];
         }
     });
@@ -73,38 +77,88 @@ var getTranslatedFAQ = function () {
     }
     return __awaiter(void 0, __spreadArray([], args_1, true), void 0, function (languageCode) {
         var faq;
-        if (languageCode === void 0) { languageCode = 'en'; }
+        if (languageCode === void 0) { languageCode = "en"; }
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, schema_1.default.findOne({ lang: languageCode })];
+                case 0: return [4 /*yield*/, schema_1.default.findOne({ lang: languageCode }).then(function (faq) {
+                        if (!faq) {
+                            var faq_str = JSON.stringify({
+                                "question": "hello mr BR",
+                                "answer": "my name is hello",
+                                "lang": languageCode,
+                            });
+                            var options = {
+                                hostname: "127.0.0.1",
+                                port: 8000,
+                                path: "/",
+                                method: "GET",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "Content-Length": Buffer.byteLength(faq_str),
+                                },
+                            };
+                            var req_1 = http.request(options, function (res) {
+                                console.log("statusCode: ".concat(res.statusCode));
+                                console.log("headers: ".concat(JSON.stringify(res.headers)));
+                                res.setEncoding("utf8");
+                                var ans = "";
+                                res.on("data", function (d) {
+                                    //process.stdout.write(d);
+                                    ans += d;
+                                });
+                                res.on("end", function () {
+                                    //console.log(JSON.parse(ans));
+                                    faq = new schema_1.default();
+                                    var responseAns = JSON.parse(ans);
+                                    if (responseAns.error || responseAns.answer_translated === undefined) {
+                                        console.log(responseAns.error);
+                                        //return;
+                                    }
+                                    else {
+                                        faq.question1 = responseAns.question_translated
+                                            ? responseAns.question_translated
+                                            : responseAns.question;
+                                        faq.answer1 = responseAns.answer_translated
+                                            ? responseAns.answer_translated
+                                            : responseAns.answer;
+                                        faq.lang = responseAns.lang;
+                                        req_1.end();
+                                        console.log(faq);
+                                        schema_1.default.create(faq).then(function () {
+                                            console.log("FAQ created successfully!");
+                                        });
+                                    }
+                                });
+                            });
+                            req_1.write(faq_str);
+                        }
+                        else {
+                            console.log(faq);
+                        }
+                    })];
                 case 1:
                     faq = _a.sent();
-                    console.log(faq);
                     return [2 /*return*/];
             }
         });
     });
 };
 // Run the functions
-(function () { return __awaiter(void 0, void 0, void 0, function () {
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, createFAQ()];
-            case 1:
-                _a.sent();
-                return [4 /*yield*/, getTranslatedFAQ('hi')];
-            case 2:
-                _a.sent(); // Get Hindi translation
-                return [4 /*yield*/, getTranslatedFAQ('bn')];
-            case 3:
-                _a.sent(); // Get Bengali translation
-                return [4 /*yield*/, getTranslatedFAQ('fr')];
-            case 4:
-                _a.sent();
-                return [4 /*yield*/, getTranslatedFAQ()];
-            case 5:
-                _a.sent(); // Fallback to default text (no French translation)
-                return [2 /*return*/];
-        }
-    });
-}); })();
+// (async () => {
+//   //await createFAQ();
+//   await getTranslatedFAQ("fr").then(async () => {
+//     await getTranslatedFAQ("jhgsljkfhgjfdk").then(async () => {
+//       await getTranslatedFAQ("fsjskldfjsdlka").then(async () => {
+//         await getTranslatedFAQ("hi");
+//       }); 
+//     });
+//   });
+//   await getTranslatedFAQ(); // Fallback to default text (no French translation)
+// })();
+// HTTP Server using express
+app.get('/', function (req, res) {
+    res.json('Hello World');
+});
+app.listen(port, function () {
+    console.log("Server running on port ".concat(port));
+});
